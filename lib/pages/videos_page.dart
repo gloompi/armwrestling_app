@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shimmer/shimmer.dart';
 
 /// Displays a list of videos with optional category filtering and infinite
 /// scrolling. Each video can be tapped to view details, comments and
@@ -75,6 +76,15 @@ class _VideosPageState extends State<VideosPage> {
     });
   }
 
+  Future<void> _refresh() async {
+    setState(() {
+      _videos.clear();
+      _page = 0;
+      _hasMore = true;
+    });
+    await _loadMore();
+  }
+
   void _onScroll() {
     if (_scrollController.position.pixels >=
             _scrollController.position.maxScrollExtent - 300 &&
@@ -115,47 +125,84 @@ class _VideosPageState extends State<VideosPage> {
                     child: ChoiceChip(
                       label: Text(cat['name'] as String? ?? ''),
                       selected: _selectedCategory == cat['id'],
-                      onSelected: (_) => _selectCategory(cat['id'] as String),
+                      onSelected: (_) =>
+                          _selectCategory(cat['id'] as String),
                     ),
                   )),
             ],
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            controller: _scrollController,
-            itemCount: _videos.length + (_hasMore ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index >= _videos.length) {
-                return const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              final video = _videos[index];
-                   return Card(
-                     margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                     child: ListTile(
-                       contentPadding: const EdgeInsets.all(8),
-                       leading: const Icon(Icons.play_circle_outline, size: 40),
-                       title: Text(
-                         video['title'] as String? ?? 'Untitled',
-                         style: Theme.of(context).textTheme.titleMedium,
-                       ),
-                       subtitle: Text(
-                         video['description'] as String? ?? '',
-                         maxLines: 2,
-                         overflow: TextOverflow.ellipsis,
-                       ),
-                       onTap: () {
-                         showDialog(
-                           context: context,
-                           builder: (context) => VideoDetailDialog(videoId: video['id'] as String),
-                         );
-                       },
-                     ),
-                   );
-            },
+          child: RefreshIndicator(
+            onRefresh: _refresh,
+            child: _videos.isEmpty && _loading
+                ? ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: 6,
+                    itemBuilder: (context, index) {
+                      return Shimmer.fromColors(
+                        baseColor:
+                            Theme.of(context).colorScheme.surfaceVariant,
+                        highlightColor: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.1),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 4, horizontal: 8),
+                          child: Container(
+                            height: 72,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceVariant,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: _videos.length + (_hasMore ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index >= _videos.length) {
+                        return const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      final video = _videos[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                            vertical: 4, horizontal: 8),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(8),
+                          leading: const Icon(
+                              Icons.play_circle_outline, size: 40),
+                          title: Text(
+                            video['title'] as String? ?? 'Untitled',
+                            style:
+                                Theme.of(context).textTheme.titleMedium,
+                          ),
+                          subtitle: Text(
+                            video['description'] as String? ?? '',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => VideoDetailDialog(
+                                  videoId: video['id'] as String),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
           ),
         ),
       ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
 import 'dart:async';
 import 'pages/home_page.dart';
 import 'pages/exercises_page.dart';
@@ -7,6 +8,9 @@ import 'pages/workouts_page.dart';
 import 'pages/videos_page.dart';
 import 'pages/more_page.dart';
 import 'pages/login_page.dart';
+
+// Theme support
+import 'theme/theme_controller.dart';
 
 /// Entry point for the Armwrestling fitness application.
 ///
@@ -24,7 +28,16 @@ Future<void> main() async {
     url: supabaseUrl,
     anonKey: supabaseAnonKey,
   );
-  runApp(const MyApp());
+  // Load persisted theme preferences before running the app so that the UI
+  // uses the correct colour scheme on startup.
+  final themeController = ThemeController();
+  await themeController.load();
+  runApp(
+    ChangeNotifierProvider<ThemeController>.value(
+      value: themeController,
+      child: const MyApp(),
+    ),
+  );
 }
 
 /// Root widget for the application. Sets up routing and theming.
@@ -33,11 +46,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeController = Provider.of<ThemeController>(context);
     return MaterialApp(
       title: 'Armwrestling Fitness',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-      ),
+      themeMode: themeController.mode,
+      theme: themeController.lightTheme,
+      darkTheme: themeController.darkTheme,
       home: const RootPage(),
       routes: {
         '/home': (_) => const HomePage(),

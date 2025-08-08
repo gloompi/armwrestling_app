@@ -1,6 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../theme/theme_controller.dart';
+import 'appearance_page.dart';
+import 'analytics_page.dart';
 
 /// Miscellaneous page offering account settings, analytics and tools for
 /// armwrestlers such as a random start timer to train reaction time.
@@ -22,12 +28,16 @@ class _MorePageState extends State<MorePage> {
       _timerRunning = true;
       _timerStatus = 'Get ready...';
     });
-    final randomDelay = Duration(seconds: 2 + (DateTime.now().millisecond % 4));
+    // Pick a random delay between 2 and 5 seconds.
+    final randomDelay =
+        Duration(seconds: 2 + (DateTime.now().millisecond % 4));
     _timer = Timer(randomDelay, () {
       setState(() {
         _timerRunning = false;
         _timerStatus = 'Go!';
       });
+      // Provide subtle haptic feedback when the user should react.
+      HapticFeedback.lightImpact();
     });
   }
 
@@ -41,6 +51,7 @@ class _MorePageState extends State<MorePage> {
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
     return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
         if (user != null) ...[
           ListTile(
@@ -68,15 +79,30 @@ class _MorePageState extends State<MorePage> {
         ],
         const Divider(),
         ListTile(
+          leading: const Icon(Icons.color_lens),
+          title: const Text('Appearance & Theme'),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const AppearancePage(),
+              ),
+            );
+          },
+        ),
+        ListTile(
           leading: const Icon(Icons.analytics),
           title: const Text('Analytics'),
           onTap: () {
-            // TODO: navigate to analytics page
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const AnalyticsPage(),
+              ),
+            );
           },
         ),
         ListTile(
           leading: const Icon(Icons.timer),
-          title: const Text('Random start timer'),
+          title: const Text('Reaction timer'),
           subtitle: Text(_timerStatus),
           onTap: _startRandomTimer,
         ),

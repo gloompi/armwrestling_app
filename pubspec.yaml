@@ -20,6 +20,21 @@ dependencies:
   hooks_riverpod: ^2.3.6
   intl: any
 
+  # State management for theme and other UI aspects
+  provider: ^6.0.5
+
+  # Persistent storage for user preferences such as theme selection
+  shared_preferences: ^2.2.0
+
+  # Keep the screen awake during workout sessions
+  wakelock_plus: ^1.1.6
+
+  # Skeleton loader for improved loading experience
+  shimmer: ^3.0.0
+
+  # Charts for the analytics page
+  fl_chart: ^0.60.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
