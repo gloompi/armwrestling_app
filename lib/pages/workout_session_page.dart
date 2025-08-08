@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
 
 /// Page that guides the user through a workout session. It displays each
 /// exercise in the workout one by one with a countdown timer for both the
