@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'workout_session_page.dart';
 
 /// Home page displaying workouts scheduled for the current day and offering
 /// quick access to start or continue a workout. A summary of recent
@@ -86,7 +87,15 @@ class _HomePageState extends State<HomePage> {
                       subtitle: Text(workout['description'] as String? ?? ''),
                       trailing: ElevatedButton(
                         onPressed: () {
-                          // TODO: Navigate to workout start page.
+                          // Navigate to the workout session page where the
+                          // exercises can be performed with timers.
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => WorkoutSessionPage(
+                                workoutId: workout['id'] as String,
+                              ),
+                            ),
+                          );
                         },
                         child: const Text('Start'),
                       ),

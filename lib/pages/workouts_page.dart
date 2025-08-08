@@ -108,34 +108,48 @@ class _WorkoutsPageState extends State<WorkoutsPage> with SingleTickerProviderSt
     _loadMore(isMy: true);
   }
 
-      @override
-      Widget build(BuildContext context) {
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Workouts'),
-            bottom: TabBar(
+  @override
+  Widget build(BuildContext context) {
+    // Do not wrap in its own Scaffold to avoid nested scaffolds. The bottom
+    // navigation bar is provided by the parent MainNavigation. Here we build
+    // a column containing a TabBar, the tab views, and a floating action
+    // button aligned at bottom right for creating a new workout.
+    return Stack(
+      children: [
+        Column(
+          children: [
+            TabBar(
               controller: _tabController,
+              labelColor: Theme.of(context).colorScheme.onSurface,
               tabs: const [
                 Tab(text: 'My Workouts'),
                 Tab(text: 'Public'),
               ],
             ),
-          ),
-          body: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildList(isMy: true),
-              _buildList(isMy: false),
-            ],
-          ),
-          floatingActionButton: FloatingActionButton(
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildList(isMy: true),
+                  _buildList(isMy: false),
+                ],
+              ),
+            ),
+          ],
+        ),
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: FloatingActionButton(
             onPressed: () {
               // TODO: navigate to create workout page
             },
             child: const Icon(Icons.add),
           ),
-        );
-      }
+        ),
+      ],
+    );
+  }
 
   Widget _buildList({required bool isMy}) {
     final items = isMy ? _myWorkouts : _publicWorkouts;
