@@ -4,14 +4,15 @@ import 'package:provider/provider.dart';
 import '../theme/theme_controller.dart';
 import '../theme/theme_presets.dart';
 
-/// Allows the user to select a colour preset and light/dark/system mode.
-/// Changes are applied immediately and persisted via [ThemeController].
+/// A simple settings page that allows the user to choose their preferred
+/// colour preset and theme mode. Selections are applied immediately and
+/// persisted via [ThemeController].
 class AppearancePage extends StatelessWidget {
   const AppearancePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final themeController = context.watch<ThemeController>();
+    final controller = context.watch<ThemeController>();
     return Scaffold(
       appBar: AppBar(
         title: const Text('Appearance & Theme'),
@@ -19,66 +20,56 @@ class AppearancePage extends StatelessWidget {
       body: ListView(
         children: [
           const ListTile(
-            title: Text(
-              'Colour preset',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            title: Text('Color Preset'),
+            subtitle: Text('Choose a colour scheme for the app'),
           ),
-          // Generate a radio list tile for each preset. Show the colour
-          // as a leading circle avatar.
-          ...kThemePresets.map((preset) {
-            final selected = preset == themeController.preset;
-            return RadioListTile<ThemePreset>(
-              value: preset,
-              groupValue: themeController.preset,
-              onChanged: (value) {
-                if (value != null) {
-                  themeController.setPreset(value);
-                }
-              },
-              title: Text(preset.name),
-              secondary: CircleAvatar(
-                backgroundColor: preset.seedColor,
-              ),
-              selected: selected,
-            );
-          }),
+          ...kThemePresets.map((preset) => RadioListTile<ThemePreset>(
+                title: Text(preset.name),
+                secondary: CircleAvatar(
+                  backgroundColor: preset.seedColor,
+                ),
+                value: preset,
+                groupValue: controller.preset,
+                onChanged: (ThemePreset? value) {
+                  if (value != null) {
+                    controller.updatePreset(value);
+                  }
+                },
+              )),
           const Divider(),
           const ListTile(
-            title: Text(
-              'Theme mode',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            title: Text('Theme Mode'),
+            subtitle: Text('Switch between light, dark or follow system'),
           ),
           RadioListTile<ThemeMode>(
+            title: const Text('System'),
             value: ThemeMode.system,
-            groupValue: themeController.mode,
-            onChanged: (mode) {
+            groupValue: controller.mode,
+            onChanged: (ThemeMode? mode) {
               if (mode != null) {
-                themeController.setMode(mode);
+                controller.updateMode(mode);
               }
             },
-            title: const Text('Use system setting'),
           ),
           RadioListTile<ThemeMode>(
-            value: ThemeMode.light,
-            groupValue: themeController.mode,
-            onChanged: (mode) {
-              if (mode != null) {
-                themeController.setMode(mode);
-              }
-            },
             title: const Text('Light'),
-          ),
-          RadioListTile<ThemeMode>(
-            value: ThemeMode.dark,
-            groupValue: themeController.mode,
-            onChanged: (mode) {
+            value: ThemeMode.light,
+            groupValue: controller.mode,
+            onChanged: (ThemeMode? mode) {
               if (mode != null) {
-                themeController.setMode(mode);
+                controller.updateMode(mode);
               }
             },
+          ),
+          RadioListTile<ThemeMode>(
             title: const Text('Dark'),
+            value: ThemeMode.dark,
+            groupValue: controller.mode,
+            onChanged: (ThemeMode? mode) {
+              if (mode != null) {
+                controller.updateMode(mode);
+              }
+            },
           ),
         ],
       ),

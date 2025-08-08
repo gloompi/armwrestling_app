@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 /// Page that guides the user through a workout session. It displays each
 /// exercise in the workout one by one with a countdown timer for both the
@@ -25,6 +26,8 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
   int _secondsLeft = 30;
   bool _isRest = false;
   bool _sessionFinished = false;
+  bool _running = false;
+  bool _paused = false;
 
   @override
   void initState() {
@@ -58,10 +61,16 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
     });
   }
 
+  /// Starts or resumes the timer. While the timer is running the screen
+  /// remains awake via [WakelockPlus]. When the countdown reaches zero it
+  /// transitions into a rest period or advances to the next exercise.
   void _startOrResume() {
-    // Start or resume the countdown timer. When the timer completes, either
-    // transition to rest period or move to the next exercise.
-    if (_timer != null && _timer!.isActive) return;
+    if (_running) return;
+    setState(() {
+      _running = true;
+      _paused = false;
+    });
+    WakelockPlus.enable();
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (_secondsLeft > 0) {
         setState(() => _secondsLeft--);
@@ -80,6 +89,20 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
     });
   }
 
+  /// Pauses the current countdown. The timer is cancelled but the session
+  /// state is preserved so it can be resumed later. The device screen will
+  /// be allowed to sleep while paused.
+  void _pause() {
+    _timer?.cancel();
+    setState(() {
+      _running = false;
+      _paused = true;
+    });
+    WakelockPlus.disable();
+  }
+
+  /// Advances to the next exercise or ends the session if there are no
+  /// remaining exercises. Resets the timer and rest state accordingly.
   void _advanceExercise() {
     if (_currentIndex < _exercises.length - 1) {
       setState(() {
@@ -87,12 +110,18 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
         _isRest = false;
         _secondsLeft = 30;
       });
+      // Automatically resume running for the next exercise
+      _running = false;
+      _paused = false;
       _startOrResume();
     } else {
+      _timer?.cancel();
+      WakelockPlus.disable();
       setState(() {
         _sessionFinished = true;
+        _running = false;
       });
-      // Optionally record completion here
+      // TODO: record completion or show a summary
     }
   }
 
@@ -124,7 +153,11 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
             ? Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('Workout complete!', style: TextStyle(fontSize: 24)),
+                  const Text(
+                    'Workout complete!',
+                    style: TextStyle(fontSize: 24),
+                    textAlign: TextAlign.center,
+                  ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context),
@@ -143,13 +176,31 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
                   const SizedBox(height: 24),
                   Text(
                     _formatTime(_secondsLeft),
-                    style: Theme.of(context).textTheme.displayLarge?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context)
+                        .textTheme
+                        .displayLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _startOrResume,
-                    child: const Text('Start / Resume'),
+                  // Control buttons: start/pause/resume and skip to next
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: _running ? _pause : _startOrResume,
+                        child: Text(
+                          _running
+                              ? 'Pause'
+                              : (_paused ? 'Resume' : 'Start'),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton(
+                        onPressed: _advanceExercise,
+                        child: const Text('Next'),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 24),
                   if (nextName != null)

@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 
-/// Represents a user-selectable theme preset consisting of a name and a
-/// seed color. The seed color is used by Material 3 to generate the full
-/// color scheme for both light and dark themes.
+/// A simple data class representing a theme preset with a human friendly name
+/// and a seed color. The seed color is used to generate a Material 3
+/// color scheme via `colorSchemeSeed` in ThemeData.
 class ThemePreset {
+  /// The display name of the theme, shown in the appearance settings.
   final String name;
+
+  /// The seed color used to derive the color scheme.
   final Color seedColor;
+
   const ThemePreset(this.name, this.seedColor);
 }
 
-/// A list of predefined theme presets. Feel free to add more colours here.
-/// Users can switch between these presets in the appearance settings page.
+/// A list of all available theme presets. Feel free to add more colours
+/// here to provide users with additional options. Each entry consists of
+/// a descriptive name and a primary seed colour that defines the palette.
 const List<ThemePreset> kThemePresets = [
   ThemePreset('Teal', Colors.teal),
   ThemePreset('Indigo', Colors.indigo),

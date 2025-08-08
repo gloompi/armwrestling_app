@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shimmer/shimmer.dart';
 
 /// Displays a list of your workouts as well as public workouts. Provides
 /// filtering and pagination. Users can add a public workout to their own
@@ -24,6 +25,24 @@ class _WorkoutsPageState extends State<WorkoutsPage> with SingleTickerProviderSt
   bool _publicLoading = false;
   bool _publicHasMore = true;
   int _publicPage = 0;
+
+  Future<void> _refresh({required bool isMy}) async {
+    if (isMy) {
+      setState(() {
+        _myWorkouts.clear();
+        _myPage = 0;
+        _myHasMore = true;
+      });
+      await _loadMore(isMy: true);
+    } else {
+      setState(() {
+        _publicWorkouts.clear();
+        _publicPage = 0;
+        _publicHasMore = true;
+      });
+      await _loadMore(isMy: false);
+    }
+  }
 
   @override
   void initState() {
@@ -155,36 +174,83 @@ class _WorkoutsPageState extends State<WorkoutsPage> with SingleTickerProviderSt
     final items = isMy ? _myWorkouts : _publicWorkouts;
     final hasMore = isMy ? _myHasMore : _publicHasMore;
     final controller = isMy ? _myController : _publicController;
-    return ListView.builder(
-      controller: controller,
-      itemCount: items.length + (hasMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index >= items.length) {
-          return const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-        final workout = items[index];
-        return ListTile(
-          title: Text(workout['name'] as String? ?? 'Unnamed'),
-          subtitle: Text(workout['description'] as String? ?? ''),
-          trailing: isMy
-              ? IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () {
-                    // TODO: edit workout
-                  },
-                )
-              : IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: () => _addPublicWorkout(workout),
-                ),
-          onTap: () {
-            // TODO: open workout details
-          },
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: () => _refresh(isMy: isMy),
+      child: items.isEmpty && (isMy ? _myLoading : _publicLoading)
+          ? ListView.builder(
+              controller: controller,
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: 6,
+              itemBuilder: (context, index) {
+                return Shimmer.fromColors(
+                  baseColor: Theme.of(context).colorScheme.surfaceVariant,
+                  highlightColor: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withOpacity(0.1),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 4, horizontal: 8),
+                    child: Container(
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceVariant,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            )
+          : ListView.builder(
+              controller: controller,
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: items.length + 1,
+              itemBuilder: (context, index) {
+                if (index < items.length) {
+                  final workout = items[index];
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                        vertical: 4, horizontal: 8),
+                    child: ListTile(
+                      title:
+                          Text(workout['name'] as String? ?? 'Unnamed'),
+                      subtitle: Text(
+                        workout['description'] as String? ?? '',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: isMy
+                          ? IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed: () {
+                                // TODO: edit workout
+                              },
+                            )
+                          : IconButton(
+                              icon: const Icon(Icons.add),
+                              onPressed: () => _addPublicWorkout(workout),
+                            ),
+                      onTap: () {
+                        // TODO: open workout details
+                      },
+                    ),
+                  );
+                } else {
+                  if (hasMore) {
+                    return const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  } else {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Center(child: Text("You're all caught up")),
+                    );
+                  }
+                }
+              },
+            ),
     );
   }
 }
