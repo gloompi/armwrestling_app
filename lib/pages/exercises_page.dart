@@ -49,8 +49,13 @@ class _ExercisesPageState extends State<ExercisesPage> {
     const limit = 20;
     final query = _client.from('exercises').select<List<Map<String, dynamic>>>();
     if (_selectedCategoryId != null) {
-      // Filter via a subquery on exercise_categories
-      query.inFilter('id', await _exerciseIdsForCategory(_selectedCategoryId!));
+      // Filter via a subquery on exercise_categories. In Supabase Flutter v1 the
+      // `inFilter` method is not available; instead use `in_` to perform an
+      // `IN` filter. See the Supabase docs for details【481103789607762†L470-L476】.
+      final ids = await _exerciseIdsForCategory(_selectedCategoryId!);
+      if (ids.isNotEmpty) {
+        query.in_('id', ids);
+      }
     }
     final res = await query.order('name').range(_page * limit, _page * limit + limit - 1);
     setState(() {
