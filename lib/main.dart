@@ -15,8 +15,9 @@ import 'pages/login_page.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  const supabaseUrl = 'https://ldofopesenhkgwbmpffa.supabase.co';
-  const supabaseAnonKey = '<YOUR_SUPABASE_ANON_KEY_HERE>';
+  const supabaseUrl = 'https://ldofopesehnkgwbmpffa.supabase.co';
+  const supabaseAnonKey =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxkb2ZvcGVzZWhua2d3Ym1wZmZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2NDA5NjgsImV4cCI6MjA3MDIxNjk2OH0.wlRHtXpg3gMv7_l3e4WX9EZZ0VGOr5aG4h99LLtfdpY';
 
   await Supabase.initialize(
     url: supabaseUrl,
