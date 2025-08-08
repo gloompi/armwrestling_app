@@ -74,6 +74,21 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                      // App heading for better branding
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 24.0),
+                        child: Column(
+                          children: [
+                            Icon(Icons.fitness_center, size: 48, color: Theme.of(context).colorScheme.primary),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Armwrestling Fitness',
+                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
                   TextFormField(
                     controller: _emailController,
                     decoration: const InputDecoration(labelText: 'Email'),

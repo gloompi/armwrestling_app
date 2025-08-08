@@ -108,28 +108,34 @@ class _WorkoutsPageState extends State<WorkoutsPage> with SingleTickerProviderSt
     _loadMore(isMy: true);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: TabBar(
-        controller: _tabController,
-        tabs: const [Tab(text: 'My Workouts'), Tab(text: 'Public')],
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildList(isMy: true),
-          _buildList(isMy: false),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: navigate to create workout page
-        },
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
+      @override
+      Widget build(BuildContext context) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Workouts'),
+            bottom: TabBar(
+              controller: _tabController,
+              tabs: const [
+                Tab(text: 'My Workouts'),
+                Tab(text: 'Public'),
+              ],
+            ),
+          ),
+          body: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildList(isMy: true),
+              _buildList(isMy: false),
+            ],
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              // TODO: navigate to create workout page
+            },
+            child: const Icon(Icons.add),
+          ),
+        );
+      }
 
   Widget _buildList({required bool isMy}) {
     final items = isMy ? _myWorkouts : _publicWorkouts;
