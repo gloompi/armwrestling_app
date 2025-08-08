@@ -99,8 +99,8 @@ class _ExerciseDetailPageState extends State<ExerciseDetailPage> {
                         Text('Recommended:', style: Theme.of(context).textTheme.titleMedium),
                         const SizedBox(height: 4),
                         Text(
-                          '${_exercise!['sets'] != null ? '${_exercise!['sets']} sets' : ''}
-${_exercise!['reps'] != null ? '${_exercise!['reps']} reps' : ''}',
+                          '${_exercise!['sets'] != null ? '${_exercise!['sets']} sets' : ''}'
+                          '${_exercise!['reps'] != null ? ' ${_exercise!['reps']} reps' : ''}',
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
                         const SizedBox(height: 16),

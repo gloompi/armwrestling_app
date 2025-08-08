@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as provider;
 import 'dart:async';
 import 'pages/home_page.dart';
 import 'pages/exercises_page.dart';
@@ -33,7 +33,7 @@ Future<void> main() async {
   final themeController = ThemeController();
   await themeController.load();
   runApp(
-    ChangeNotifierProvider<ThemeController>.value(
+    provider.ChangeNotifierProvider<ThemeController>.value(
       value: themeController,
       child: const MyApp(),
     ),
@@ -46,7 +46,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeController = Provider.of<ThemeController>(context);
+    final themeController = provider.Provider.of<ThemeController>(context);
     return MaterialApp(
       title: 'Armwrestling Fitness',
       themeMode: themeController.mode,
