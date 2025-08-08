@@ -1,0 +1,106 @@
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+/// A simple login page using Supabase email/password authentication.
+/// Provides both sign in and sign up flows in one page.
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+  bool _isSignIn = true;
+
+  Future<void> _authenticate() async {
+    final isValid = _formKey.currentState?.validate() ?? false;
+    if (!isValid) return;
+    setState(() => _isLoading = true);
+    final auth = Supabase.instance.client.auth;
+    try {
+      if (_isSignIn) {
+        await auth.signInWithPassword(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+      } else {
+        await auth.signUp(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+      }
+    } on AuthException catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.message)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(_isSignIn ? 'Sign in' : 'Sign up')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: const InputDecoration(labelText: 'Email'),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your email';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _passwordController,
+                    decoration: const InputDecoration(labelText: 'Password'),
+                    obscureText: true,
+                    validator: (value) {
+                      if (value == null || value.length < 6) {
+                        return 'Password must be at least 6 characters';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  _isLoading
+                      ? const CircularProgressIndicator()
+                      : ElevatedButton(
+                          onPressed: _authenticate,
+                          child: Text(_isSignIn ? 'Sign in' : 'Sign up'),
+                        ),
+                  TextButton(
+                    onPressed: () => setState(() => _isSignIn = !_isSignIn),
+                    child: Text(_isSignIn
+                        ? 'Don\'t have an account? Sign up'
+                        : 'Already have an account? Sign in'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

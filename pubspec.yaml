@@ -1,0 +1,29 @@
+name: armwrestling_app
+description: >-
+  A fitness tracking application for armwrestling workouts built with Flutter
+  and Supabase. This app allows you to browse exercises, videos and
+  workouts, start and record workouts, analyse your progress and more.
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+version: 1.0.0
+
+environment:
+  sdk: ">=2.18.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  supabase_flutter: ^1.10.7
+  flutter_riverpod: ^2.3.6
+  flutter_hooks: ^0.18.6
+  hooks_riverpod: ^2.3.6
+  intl: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
