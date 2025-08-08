@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { uploadFile } from "@/lib/storage";
 import { useRequireAdmin } from "@/lib/useRequireAdmin";
 
 interface Exercise {
@@ -22,6 +23,7 @@ export default function EditExercisePage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [sets, setSets] = useState("");
   const [reps, setReps] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -32,7 +34,7 @@ export default function EditExercisePage() {
     async function fetchExercise() {
       if (!id) return;
       const { data, error } = await supabase
-        .from<Exercise>("exercises")
+        .from("exercises")
         .select("id, name, description, preview_url, recommended_sets, recommended_reps")
         .eq("id", id)
         .single();
@@ -53,22 +55,33 @@ export default function EditExercisePage() {
     if (!exercise) return;
     setSubmitting(true);
     setError(null);
-    const { error: updateError } = await supabase
-      .from("exercises")
-      .update({
-        name,
-        description,
-        preview_url: previewUrl || null,
-        recommended_sets: sets ? parseInt(sets, 10) : null,
-        recommended_reps: reps ? parseInt(reps, 10) : null,
-      })
-      .eq("id", exercise.id);
-    if (updateError) {
-      setError(updateError.message);
-    } else {
+    try {
+      // If a new file is selected, upload it and use its public URL. Otherwise use the text field.
+      let finalPreviewUrl: string | null = null;
+      if (previewFile) {
+        finalPreviewUrl = await uploadFile(previewFile);
+      } else if (previewUrl.trim() !== "") {
+        finalPreviewUrl = previewUrl.trim();
+      }
+      const { error: updateError } = await supabase
+        .from("exercises")
+        .update({
+          name,
+          description,
+          preview_url: finalPreviewUrl,
+          recommended_sets: sets ? parseInt(sets, 10) : null,
+          recommended_reps: reps ? parseInt(reps, 10) : null,
+        })
+        .eq("id", exercise.id);
+      if (updateError) {
+        throw updateError;
+      }
       router.push("/exercises");
+    } catch (err: any) {
+      setError(err.message ?? String(err));
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   const handleDelete = async () => {
@@ -119,7 +132,17 @@ export default function EditExercisePage() {
             value={previewUrl}
             onChange={(e) => setPreviewUrl(e.target.value)}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Enter external URL (optional if uploading file)"
           />
+          <div className="mt-2">
+            <label className="block text-sm font-medium">Or upload new file</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setPreviewFile(e.target.files?.[0] ?? null)}
+              className="mt-1 block w-full text-sm"
+            />
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>

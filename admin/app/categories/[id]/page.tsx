@@ -27,7 +27,7 @@ export default function EditCategoryPage() {
     async function fetchCategory() {
       if (!id) return;
       const { data, error } = await supabase
-        .from<Category>("categories")
+        .from("categories")
         .select("id, name, description")
         .eq("id", id)
         .single();

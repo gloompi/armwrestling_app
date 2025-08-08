@@ -16,7 +16,9 @@ interface WorkoutExercise {
   id: string;
   exercise_id: string;
   order: number;
-  exercise: { id: string; name: string };
+  // `exercise` is joined using a relationship; Supabase may return an object or array.
+  // Use `any` to avoid type conflicts when returned value is an array.
+  exercise: any;
 }
 
 interface ExerciseOption {
@@ -45,7 +47,7 @@ export default function EditWorkoutPage() {
     async function fetchWorkout() {
       if (!id) return;
       const { data, error } = await supabase
-        .from<Workout>("workouts")
+        .from("workouts")
         .select("id, name, description, is_public, user_id")
         .eq("id", id)
         .single();
@@ -63,7 +65,7 @@ export default function EditWorkoutPage() {
     async function fetchWorkoutExercises() {
       if (!id) return;
       const { data, error } = await supabase
-        .from<WorkoutExercise>("workout_exercises")
+        .from("workout_exercises")
         .select(
           "id, exercise_id, order, exercise:exercises(id, name)"
         )
@@ -78,7 +80,7 @@ export default function EditWorkoutPage() {
 
   const fetchExerciseOptions = async () => {
     const { data, error } = await supabase
-      .from<ExerciseOption>("exercises")
+      .from("exercises")
       .select("id, name")
       .order("name");
     if (!error && data) {

@@ -20,7 +20,7 @@ export default function CategoriesPage() {
   useEffect(() => {
     async function fetchCategories() {
       const { data, error } = await supabase
-        .from<Category>("categories")
+        .from("categories")
         .select("id, name, description")
         .order("name", { ascending: true });
       if (!error && data) {

@@ -21,7 +21,7 @@ export default function ExercisesPage() {
   useEffect(() => {
     async function fetchExercises() {
       const { data, error } = await supabase
-        .from<Exercise>("exercises")
+        .from("exercises")
         .select("id, name, description, preview_url, recommended_sets, recommended_reps")
         .order("name", { ascending: true });
       if (!error && data) {
