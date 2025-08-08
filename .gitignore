@@ -52,6 +52,7 @@ android/
 /admin/node_modules/
 /linux/
 /windows/
+/flutter/
 /admin/.next/
 
 .env
