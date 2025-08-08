@@ -149,15 +149,15 @@ class _ExercisesPageState extends State<ExercisesPage> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
                               vertical: 4, horizontal: 8),
-                          child: Container(
-                            height: 72,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceVariant,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                        child: Container(
+                          height: 88,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceVariant,
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                        ),
                         ),
                       );
                     },
@@ -174,45 +174,48 @@ class _ExercisesPageState extends State<ExercisesPage> {
                         );
                       }
                       final exercise = _exercises[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(
-                            vertical: 4, horizontal: 8),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.all(8),
-                          leading: exercise['preview_url'] != null
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.network(
-                                    exercise['preview_url'],
-                                    width: 64,
-                                    height: 64,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) =>
-                                        const Icon(Icons.fitness_center,
-                                            size: 40),
+                      return SizedBox(
+                        height: 88,
+                        child: Card(
+                          margin: const EdgeInsets.symmetric(
+                              vertical: 4, horizontal: 8),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.all(8),
+                            leading: exercise['preview_url'] != null
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.network(
+                                      exercise['preview_url'],
+                                      width: 64,
+                                      height: 64,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) =>
+                                          const Icon(Icons.fitness_center,
+                                              size: 40),
+                                    ),
+                                  )
+                                : const Icon(Icons.fitness_center, size: 40),
+                            title: Text(
+                              exercise['name'] as String? ?? 'Unnamed',
+                              style:
+                                  Theme.of(context).textTheme.titleMedium,
+                            ),
+                            subtitle: Text(
+                              exercise['description'] as String? ?? '',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            onTap: () {
+                              // Navigate to exercise details page
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => ExerciseDetailPage(
+                                    exerciseId: exercise['id'] as String,
                                   ),
-                                )
-                              : const Icon(Icons.fitness_center, size: 40),
-                          title: Text(
-                            exercise['name'] as String? ?? 'Unnamed',
-                            style:
-                                Theme.of(context).textTheme.titleMedium,
-                          ),
-                          subtitle: Text(
-                            exercise['description'] as String? ?? '',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          onTap: () {
-                            // Navigate to exercise details page
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => ExerciseDetailPage(
-                                  exerciseId: exercise['id'] as String,
                                 ),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
                       );
                     },

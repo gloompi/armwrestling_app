@@ -232,7 +232,7 @@ class _WorkoutsPageState extends State<WorkoutsPage> with SingleTickerProviderSt
                     padding: const EdgeInsets.symmetric(
                         vertical: 4, horizontal: 8),
                     child: Container(
-                      height: 72,
+                      height: 88,
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.surfaceVariant,
                         borderRadius: BorderRadius.circular(12),
@@ -249,45 +249,48 @@ class _WorkoutsPageState extends State<WorkoutsPage> with SingleTickerProviderSt
               itemBuilder: (context, index) {
                 if (index < items.length) {
                   final workout = items[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                        vertical: 4, horizontal: 8),
-                    child: ListTile(
-                      title:
-                          Text(workout['name'] as String? ?? 'Unnamed'),
-                      subtitle: Text(
-                        workout['description'] as String? ?? '',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: isMy
-                          ? IconButton(
-                              icon: const Icon(Icons.edit),
-                              onPressed: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => WorkoutDetailPage(
-                                      workoutId: workout['id'] as String?,
-                                      editable: true,
+                  return SizedBox(
+                    height: 88,
+                    child: Card(
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 4, horizontal: 8),
+                      child: ListTile(
+                        title:
+                            Text(workout['name'] as String? ?? 'Unnamed'),
+                        subtitle: Text(
+                          workout['description'] as String? ?? '',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: isMy
+                            ? IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => WorkoutDetailPage(
+                                        workoutId: workout['id'] as String?,
+                                        editable: true,
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
-                            )
-                          : IconButton(
-                              icon: const Icon(Icons.add),
-                              onPressed: () => _addPublicWorkout(workout),
+                                  );
+                                },
+                              )
+                            : IconButton(
+                                icon: const Icon(Icons.add),
+                                onPressed: () => _addPublicWorkout(workout),
+                              ),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => WorkoutDetailPage(
+                                workoutId: workout['id'] as String?,
+                                editable: isMy,
+                              ),
                             ),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => WorkoutDetailPage(
-                              workoutId: workout['id'] as String?,
-                              editable: isMy,
-                            ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   );
                 } else {
