@@ -59,7 +59,12 @@ class _VideosPageState extends State<VideosPage> {
     final query = _client.from('videos').select<List<Map<String, dynamic>>>();
     if (_selectedCategory != null) {
       final ids = await _videoIdsForCategory(_selectedCategory!);
-      query.inFilter('id', ids);
+      // Use `in_` instead of `inFilter` for Supabase Flutter v1.0.x. This method
+      // performs an `IN` filter on the `id` column when the list of ids is not
+      // empty.【481103789607762†L470-L476】
+      if (ids.isNotEmpty) {
+        query.in_('id', ids);
+      }
     }
     final res = await query.order('title').range(_page * limit, _page * limit + limit - 1);
     setState(() {
@@ -177,7 +182,13 @@ class _VideoDetailDialogState extends State<VideoDetailDialog> {
     final exerciseIds = relRows.map((r) => r['exercise_id'] as String).toList();
     List<Map<String, dynamic>> exercises = [];
     if (exerciseIds.isNotEmpty) {
-      exercises = await _client.from('exercises').select<List<Map<String, dynamic>>>().inFilter('id', exerciseIds).limit(5);
+      // Use `in_` instead of `inFilter` since the latter is unavailable in
+      // Supabase Flutter v1.0.x【481103789607762†L470-L476】. Limit results to 5.
+      exercises = await _client
+          .from('exercises')
+          .select<List<Map<String, dynamic>>>()
+          .in_('id', exerciseIds)
+          .limit(5);
     }
     final hasMore = exerciseIds.length > exercises.length;
     setState(() {
