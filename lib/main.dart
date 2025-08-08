@@ -60,7 +60,12 @@ class RootPage extends StatefulWidget {
 }
 
 class _RootPageState extends State<RootPage> {
-  StreamSubscription<AuthStateChangeEvent>? _authSub;
+  // Supabase emits AuthState objects when the auth state changes. Use a generic
+  // type here rather than AuthStateChangeEvent because the SDK does not
+  // expose a class named `AuthStateChangeEvent` in v1.x. Listening on
+  // `onAuthStateChange` with `dynamic` ensures compatibility across SDK
+  // versions.
+  StreamSubscription<dynamic>? _authSub;
 
   @override
   void initState() {
@@ -68,8 +73,11 @@ class _RootPageState extends State<RootPage> {
     // Listen to authentication state changes so we rebuild when a user signs in
     // or out. Without this, the user would need to manually refresh the app
     // after logging in【481103789607762†L470-L476】.
-    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((event) {
-      // Trigger a rebuild when the auth state changes
+    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      // Trigger a rebuild when the auth state changes. The callback receives
+      // an AuthState object containing `event` and `session` properties. We
+      // don't need those here; simply rebuild the widget tree if the widget
+      // is still mounted.
       if (mounted) {
         setState(() {});
       }
