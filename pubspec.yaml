@@ -33,7 +33,7 @@ dependencies:
   shimmer: ^3.0.0
 
   # Charts for the analytics page
-  fl_chart: ^0.60.0
+  fl_chart: ^0.69.0
 
   # Launch external URLs such as YouTube videos
   url_launcher: ^6.2.1

@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:fl_chart/fl_chart.dart';
 
-/// Displays statistics and charts about the user's workouts and exercises.
+/// Shows statistics and charts about the user's workouts and exercises.
 /// Uses the fl_chart package to render a line chart showing how many
 /// workouts were completed on each day and a bar chart indicating
 /// which exercises are used most frequently. When no data is
@@ -189,7 +189,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                                   isCurved: true,
                                   barWidth: 3,
                                   color: Theme.of(context).colorScheme.primary,
-                                  dotData: const FlDotData(show: false),
+                                  dotData: FlDotData(show: false),
                                 ),
                               ],
                               titlesData: FlTitlesData(
@@ -204,7 +204,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                                   sideTitles: SideTitles(showTitles: true, interval: 1),
                                 ),
                               ),
-                              gridData: const FlGridData(show: false),
+                              gridData: FlGridData(show: false),
                               borderData: FlBorderData(show: false),
                             ),
                           ),
@@ -232,7 +232,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                                 ),
                               ),
                               borderData: FlBorderData(show: false),
-                              gridData: const FlGridData(show: false),
+                              gridData: FlGridData(show: false),
                               maxY: _barGroups
                                       .map((g) => g.barRods.first.toY)
                                       .fold<double>(0, (prev, y) => y > prev ? y : prev) +
