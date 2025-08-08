@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'videos_page.dart' show VideoDetailDialog;
+import 'video_detail_page.dart';
 
 /// Shows detailed information about a single exercise including its
 /// description, recommended sets and reps, and related videos. Users can
@@ -133,6 +133,90 @@ class _ExerciseDetailPageState extends State<ExerciseDetailPage> {
     });
   }
 
+  /// Builds the hero section containing the preview image and an overlay
+  /// with the exercise name, difficulty (if known), recommended sets
+  /// and reps, and rest suggestion. Uses a dark gradient overlay for
+  /// readability.
+  Widget _buildHero(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final previewUrl = _exercise!['preview_url'] as String?;
+    final name = _exercise!['name'] as String? ?? 'Exercise';
+    final sets = _exercise!['recommended_sets'] as int?;
+    final reps = _exercise!['recommended_reps'] as int?;
+    return Stack(
+      children: [
+        // Background image
+        previewUrl != null
+            ? Image.network(
+                previewUrl,
+                height: 240,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 240,
+                  color: colorScheme.surfaceVariant,
+                  child: const Icon(Icons.fitness_center, size: 64),
+                ),
+              )
+            : Container(
+                height: 240,
+                width: double.infinity,
+                color: colorScheme.surfaceVariant,
+                child: const Icon(Icons.fitness_center, size: 64),
+              ),
+        // Gradient overlay
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.black.withOpacity(0.6),
+                  Colors.black.withOpacity(0.0),
+                ],
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: theme.textTheme.headlineMedium
+                      ?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    if (sets != null)
+                      Text(
+                        '$sets sets',
+                        style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70),
+                      ),
+                    if (sets != null && reps != null)
+                      Text(' · ', style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70)),
+                    if (reps != null)
+                      Text(
+                        '$reps reps',
+                        style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70),
+                      ),
+                    Text(' · 60s rest',
+                        style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -142,100 +226,74 @@ class _ExerciseDetailPageState extends State<ExerciseDetailPage> {
           : _exercise == null
               ? const Center(child: Text('Exercise not found'))
               : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (_exercise!['preview_url'] != null) ...[
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            _exercise!['preview_url'],
-                            height: 200,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Container(
-                              height: 200,
-                              color: Theme.of(context).colorScheme.surfaceVariant,
-                              child: const Icon(Icons.fitness_center, size: 64),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      Text(
-                        _exercise!['name'] as String? ?? 'Exercise',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _exercise!['description'] as String? ?? '',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
+                      // Hero section with image and overlay
+                      _buildHero(context),
                       const SizedBox(height: 16),
-                      // Show recommended sets and reps if available. The
-                      // exercises table uses the columns `recommended_sets` and
-                      // `recommended_reps` to store this information. If not
-                      // present, nothing is displayed.
-                      if (_exercise!['recommended_sets'] != null ||
-                          _exercise!['recommended_reps'] != null) ...[
-                        Text('Recommended:',
-                            style: Theme.of(context).textTheme.titleMedium),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${_exercise!['recommended_sets'] != null ? '${_exercise!['recommended_sets']} sets' : ''}'
-                          '${_exercise!['recommended_reps'] != null ? ' ${_exercise!['recommended_reps']} reps' : ''}',
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                        const SizedBox(height: 8),
-                        // Show a generic rest recommendation. In the future this
-                        // could come from a dedicated column such as
-                        // `recommended_rest_seconds`.
-                        Text('Rest: 60 seconds',
-                            style: Theme.of(context).textTheme.bodyMedium),
-                        const SizedBox(height: 16),
-                      ],
-                      Text('Related videos:', style: Theme.of(context).textTheme.titleMedium),
-                      const SizedBox(height: 8),
-                      ..._videos.map(
-                        (video) => ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.play_circle_outline),
-                          title: Text(video['title'] as String? ?? ''),
-                          subtitle: Text(
-                            video['description'] as String? ?? '',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          onTap: () {
-                            // Could navigate to a video detail page but currently
-                            // we just show a simple dialog using the existing
-                            // VideoDetailDialog from videos_page.dart
-                            showDialog(
-                              context: context,
-                              builder: (context) => VideoDetailDialog(
-                                videoId: video['id'] as String,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if ((_exercise!['description'] as String?)
+                                    ?.isNotEmpty ??
+                                false) ...[
+                              Text('Description',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium),
+                              const SizedBox(height: 4),
+                              Text(
+                                _exercise!['description'] as String? ?? '',
+                                style:
+                                    Theme.of(context).textTheme.bodyMedium,
                               ),
-                            );
-                          },
-                        ),
-                      ),
-                      if (_videos.isEmpty)
-                        const Text('No videos for this exercise'),
-
-                      const SizedBox(height: 24),
-                      // Button to add this exercise to a workout. Displayed
-                      // at the end of the details so users can easily
-                      // incorporate the exercise into their personal
-                      // routine. This uses a bottom sheet to select a
-                      // workout and inserts the exercise via Supabase.
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _addToWorkout,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add to my workouts'),
+                              const SizedBox(height: 16),
+                            ],
+                            // Related videos list
+                            Text('Related Videos',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium),
+                            const SizedBox(height: 8),
+                            if (_videos.isEmpty)
+                              const Text('No related videos')
+                            else
+                              ..._videos.map(
+                                (video) => ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: const Icon(Icons.play_circle_outline),
+                                  title:
+                                      Text(video['title'] as String? ?? ''),
+                                  subtitle: Text(
+                                    video['description'] as String? ?? '',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  onTap: () {
+                                    // Navigate to dedicated video detail page instead of dialog
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => VideoDetailPage(
+                                          videoId: video['id'] as String,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            const SizedBox(height: 24),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: _addToWorkout,
+                                icon: const Icon(Icons.add),
+                                label: const Text('Add to My Workouts'),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

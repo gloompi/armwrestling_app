@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'video_detail_page.dart';
 
 /// Displays a list of videos with optional category filtering and infinite
 /// scrolling. Each video can be tapped to view details, comments and
@@ -196,10 +197,13 @@ class _VideosPageState extends State<VideosPage> {
                               overflow: TextOverflow.ellipsis,
                             ),
                             onTap: () {
-                              showDialog(
-                                context: context,
-                                builder: (context) => VideoDetailDialog(
-                                    videoId: video['id'] as String),
+                              // Navigate to the dedicated video detail page instead of a dialog.
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => VideoDetailPage(
+                                    videoId: video['id'] as String,
+                                  ),
+                                ),
                               );
                             },
                           ),

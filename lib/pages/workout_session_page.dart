@@ -28,6 +28,12 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
   bool _running = false;
   bool _paused = false;
 
+  // Duration of each exercise segment and rest segment in seconds. In a
+  // future version these could come from the workout or exercise
+  // definitions. For now they are fixed.
+  final int _exerciseDuration = 30;
+  final int _restDuration = 15;
+
   @override
   void initState() {
     super.initState();
@@ -51,7 +57,8 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
     final rows = await _client
         .from('workout_exercises')
         .select<List<Map<String, dynamic>>>(
-            '*, exercises!inner(name, description)')
+            // join exercises to include name, description and preview_url
+            '*, exercises!inner(name, description, preview_url)')
         .eq('workout_id', widget.workoutId)
         .order('order', ascending: true);
     setState(() {
@@ -103,6 +110,9 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
   /// Advances to the next exercise or ends the session if there are no
   /// remaining exercises. Resets the timer and rest state accordingly.
   void _advanceExercise() {
+    // Cancel any existing timer before moving to the next exercise to avoid
+    // overlapping timers that cause the countdown to tick too fast.
+    _timer?.cancel();
     if (_currentIndex < _exercises.length - 1) {
       setState(() {
         _currentIndex++;
@@ -124,6 +134,24 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
     }
   }
 
+  /// Goes back to the previous exercise if possible. Resets the timer and
+  /// rest state. If the current exercise is the first one this does
+  /// nothing.
+  void _previousExercise() {
+    _timer?.cancel();
+    if (_currentIndex > 0) {
+      setState(() {
+        _currentIndex--;
+        _isRest = false;
+        _secondsLeft = _exerciseDuration;
+        _sessionFinished = false;
+      });
+      _running = false;
+      _paused = false;
+      _startOrResume();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -140,9 +168,16 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
       );
     }
     final current = _exercises[_currentIndex];
-    final currentName = (current['exercises'] as Map<String, dynamic>)['name'] as String? ?? 'Exercise';
+    final currentExercisesMap = current['exercises'] as Map<String, dynamic>;
+    final currentName = currentExercisesMap['name'] as String? ?? 'Exercise';
+    final currentPreviewUrl = currentExercisesMap['preview_url'] as String?;
+    final currentSets = currentExercisesMap['recommended_sets'] as int?;
+    final currentReps = currentExercisesMap['recommended_reps'] as int?;
     final nextName = _currentIndex + 1 < _exercises.length
-        ? (( _exercises[_currentIndex + 1]['exercises'] as Map<String, dynamic>)['name'] as String? ?? '')
+        ? (((_exercises[_currentIndex + 1]['exercises'] as Map<String, dynamic>)['name']) as String? ?? '')
+        : null;
+    final nextPreviewUrl = _currentIndex + 1 < _exercises.length
+        ? (_exercises[_currentIndex + 1]['exercises'] as Map<String, dynamic>)['preview_url'] as String?
         : null;
     return Scaffold(
       appBar: AppBar(title: const Text('Workout Session')),
@@ -165,49 +200,121 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
                 ],
               )
             : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  // Exercise name or rest label and optional sets/reps
                   Text(
                     _isRest ? 'Rest' : currentName,
-                    style: Theme.of(context).textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    _formatTime(_secondsLeft),
                     style: Theme.of(context)
                         .textTheme
-                        .displayLarge
+                        .titleLarge
                         ?.copyWith(fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),
+                  if (!_isRest && (currentSets != null || currentReps != null))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        [
+                          if (currentSets != null) '${currentSets} sets',
+                          if (currentReps != null) '${currentReps} reps'
+                        ].join(' · '),
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                   const SizedBox(height: 24),
-                  // Control buttons: start/pause/resume and skip to next
+                  // Countdown ring with timer
+                  Center(
+                    child: SizedBox(
+                      width: 200,
+                      height: 200,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SizedBox(
+                            width: 200,
+                            height: 200,
+                            child: CircularProgressIndicator(
+                              value: 1 -
+                                  _secondsLeft /
+                                      (_isRest ? _restDuration : _exerciseDuration),
+                              strokeWidth: 8,
+                              backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceVariant,
+                              valueColor: AlwaysStoppedAnimation(
+                                Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            _formatTime(_secondsLeft),
+                            style: Theme.of(context)
+                                .textTheme
+                                .displayLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Small preview of current exercise during exercise phase
+                  if (!_isRest && currentPreviewUrl != null)
+                    Column(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            currentPreviewUrl,
+                            height: 120,
+                            width: 120,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        if (nextName != null)
+                          Text(
+                            'Next: $nextName',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                      ],
+                    ),
+                  if (_isRest && nextName != null)
+                    Text(
+                      'Next: $nextName',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  const SizedBox(height: 24),
+                  // Controls row: previous, play/pause/resume, next
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ElevatedButton(
-                        onPressed: _running ? _pause : _startOrResume,
-                        child: Text(
-                          _running
-                              ? 'Pause'
-                              : (_paused ? 'Resume' : 'Start'),
-                        ),
+                      IconButton(
+                        icon: const Icon(Icons.skip_previous),
+                        iconSize: 32,
+                        onPressed: _previousExercise,
                       ),
                       const SizedBox(width: 16),
-                      ElevatedButton(
+                      IconButton(
+                        icon: Icon(
+                          _running
+                              ? Icons.pause
+                              : (_paused ? Icons.play_arrow : Icons.play_arrow),
+                        ),
+                        iconSize: 48,
+                        onPressed: _running ? _pause : _startOrResume,
+                      ),
+                      const SizedBox(width: 16),
+                      IconButton(
+                        icon: const Icon(Icons.skip_next),
+                        iconSize: 32,
                         onPressed: _advanceExercise,
-                        child: const Text('Next'),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  if (nextName != null)
-                    Text(
-                      'Next: $nextName',
-                      style: Theme.of(context).textTheme.titleMedium,
-                      textAlign: TextAlign.center,
-                    ),
                 ],
               ),
       ),
