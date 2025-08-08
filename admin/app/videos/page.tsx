@@ -19,7 +19,7 @@ export default function VideosPage() {
   useEffect(() => {
     async function fetchVideos() {
       const { data, error } = await supabase
-        .from<Video>("videos")
+        .from("videos")
         .select("id, title, description, url")
         .order("created_at", { ascending: false });
       if (!error && data) {

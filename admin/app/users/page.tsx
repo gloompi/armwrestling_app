@@ -18,7 +18,7 @@ export default function UsersPage() {
   useEffect(() => {
     async function fetchProfiles() {
       const { data, error } = await supabase
-        .from<Profile>("profiles")
+        .from("profiles")
         .select("id, role, is_banned")
         .order("id");
       if (!error && data) {
