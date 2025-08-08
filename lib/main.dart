@@ -12,6 +12,9 @@ import 'pages/login_page.dart';
 // Theme support
 import 'theme/theme_controller.dart';
 
+// Data seeding utility to populate the database with example data on first run.
+import 'data/sample_data_seeder.dart';
+
 /// Entry point for the Armwrestling fitness application.
 ///
 /// The application uses Supabase for authentication and data storage.
@@ -95,7 +98,22 @@ class _RootPageState extends State<RootPage> {
       if (mounted) {
         setState(() {});
       }
+      // When a new session becomes available (user logs in) seed sample data.
+      final current = Supabase.instance.client.auth.currentSession;
+      if (current != null) {
+        SampleDataSeeder.seedIfNeeded();
+      }
     });
+
+    // If the user is already logged in when the app starts, kick off
+    // seeding of sample data in the background. The seeding function
+    // internally checks a flag in SharedPreferences to avoid inserting
+    // duplicate records.
+    final existingSession = Supabase.instance.client.auth.currentSession;
+    if (existingSession != null) {
+      // Call without awaiting to avoid blocking initState
+      SampleDataSeeder.seedIfNeeded();
+    }
   }
 
   @override
@@ -122,18 +140,21 @@ class MainNavigation extends StatefulWidget {
 }
 
 class _MainNavigationState extends State<MainNavigation> {
-  int _index = 0;
+  // Start on the Home page (index 2) because the order of pages has changed.
+  int _index = 2;
+  // Reorder pages so that the bottom navigation appears as:
+  // Exercises, Workouts, Home, Videos, More. The index of Home is 2.
   final _pages = const [
-    HomePage(),
     ExercisesPage(),
     WorkoutsPage(),
+    HomePage(),
     VideosPage(),
     MorePage(),
   ];
   final _titles = const [
-    'Home',
     'Exercises',
     'Workouts',
+    'Home',
     'Videos',
     'More',
   ];
@@ -157,24 +178,24 @@ class _MainNavigationState extends State<MainNavigation> {
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.home),
-            title: const Text('Home'),
+            leading: const Icon(Icons.fitness_center),
+            title: const Text('Exercises'),
             onTap: () {
               setState(() => _index = 0);
               Navigator.pop(context);
             },
           ),
           ListTile(
-            leading: const Icon(Icons.fitness_center),
-            title: const Text('Exercises'),
+            leading: const Icon(Icons.view_list),
+            title: const Text('Workouts'),
             onTap: () {
               setState(() => _index = 1);
               Navigator.pop(context);
             },
           ),
           ListTile(
-            leading: const Icon(Icons.view_list),
-            title: const Text('Workouts'),
+            leading: const Icon(Icons.home),
+            title: const Text('Home'),
             onTap: () {
               setState(() => _index = 2);
               Navigator.pop(context);
@@ -213,24 +234,31 @@ class _MainNavigationState extends State<MainNavigation> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _index,
         onTap: (i) => setState(() => _index = i),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
+        type: BottomNavigationBarType.fixed,
+        selectedFontSize: 12,
+        unselectedFontSize: 11,
+        showUnselectedLabels: true,
+        items: [
+          const BottomNavigationBarItem(
             icon: Icon(Icons.fitness_center),
             label: 'Exercises',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.view_list),
             label: 'Workouts',
           ),
           BottomNavigationBarItem(
+            // Make the home icon larger to stand out as the central tab. Use
+            // `activeIcon` for an even larger size when selected.
+            icon: const Icon(Icons.home, size: 32),
+            activeIcon: const Icon(Icons.home, size: 40),
+            label: 'Home',
+          ),
+          const BottomNavigationBarItem(
             icon: Icon(Icons.video_library),
             label: 'Videos',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.more_horiz),
             label: 'More',
           ),
