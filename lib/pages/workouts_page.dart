@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'workout_detail_page.dart';
 import 'package:shimmer/shimmer.dart';
 
 /// Displays a list of your workouts as well as public workouts. Provides
@@ -110,11 +111,41 @@ class _WorkoutsPageState extends State<WorkoutsPage> with SingleTickerProviderSt
   void _addPublicWorkout(Map<String, dynamic> workout) async {
     final user = _client.auth.currentUser;
     if (user == null) return;
+    // Clone the workout record for the current user. Remove the id so that
+    // Supabase can generate a new one, and mark it as private. We also
+    // copy the associated exercises from the original workout so that the
+    // user receives an exact duplicate. This requires row-level security
+    // permitting inserts into `workout_exercises` for the user.
     final newWorkout = Map<String, dynamic>.from(workout);
     newWorkout['user_id'] = user.id;
     newWorkout['is_public'] = false;
     newWorkout.remove('id');
-    await _client.from('workouts').insert(newWorkout);
+    final inserted = await _client
+        .from('workouts')
+        .insert(newWorkout)
+        .select<Map<String, dynamic>>()
+        .single();
+    final String newWorkoutId = inserted['id'] as String;
+    // Fetch exercises associated with the original workout
+    final List<Map<String, dynamic>> exRows = await _client
+        .from('workout_exercises')
+        .select<List<Map<String, dynamic>>>('exercise_id, order')
+        .eq('workout_id', workout['id'] as String);
+    if (exRows.isNotEmpty) {
+      final copyRows = exRows
+          .map((row) => {
+                'workout_id': newWorkoutId,
+                'exercise_id': row['exercise_id'],
+                'order': row['order'],
+              })
+          .toList();
+      try {
+        await _client.from('workout_exercises').insert(copyRows);
+      } catch (_) {
+        // If copying fails (e.g. due to RLS), ignore and proceed.
+      }
+    }
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Workout added to your list')),
     );
@@ -161,7 +192,16 @@ class _WorkoutsPageState extends State<WorkoutsPage> with SingleTickerProviderSt
           right: 16,
           child: FloatingActionButton(
             onPressed: () {
-              // TODO: navigate to create workout page
+              // Navigate to a new workout editor. Passing null for
+              // workoutId signals that a new workout should be created.
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const WorkoutDetailPage(
+                    workoutId: null,
+                    editable: true,
+                  ),
+                ),
+              );
             },
             child: const Icon(Icons.add),
           ),
@@ -224,7 +264,14 @@ class _WorkoutsPageState extends State<WorkoutsPage> with SingleTickerProviderSt
                           ? IconButton(
                               icon: const Icon(Icons.edit),
                               onPressed: () {
-                                // TODO: edit workout
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => WorkoutDetailPage(
+                                      workoutId: workout['id'] as String?,
+                                      editable: true,
+                                    ),
+                                  ),
+                                );
                               },
                             )
                           : IconButton(
@@ -232,7 +279,14 @@ class _WorkoutsPageState extends State<WorkoutsPage> with SingleTickerProviderSt
                               onPressed: () => _addPublicWorkout(workout),
                             ),
                       onTap: () {
-                        // TODO: open workout details
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => WorkoutDetailPage(
+                              workoutId: workout['id'] as String?,
+                              editable: isMy,
+                            ),
+                          ),
+                        );
                       },
                     ),
                   );

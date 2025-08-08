@@ -21,6 +21,85 @@ class _ExerciseDetailPageState extends State<ExerciseDetailPage> {
   List<Map<String, dynamic>> _videos = [];
   bool _loading = true;
 
+  /// Helper to add this exercise to one of the user's workouts. Presents
+  /// a bottom sheet listing the user's workouts and inserts a new row
+  /// into the `workout_exercises` table when one is selected. Requires
+  /// the user to be signed in and to own the target workout due to RLS.
+  Future<void> _addToWorkout() async {
+    final user = _client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to add exercises.')),
+      );
+      return;
+    }
+    // Load all workouts belonging to the current user
+    final workouts = await _client
+        .from('workouts')
+        .select<List<Map<String, dynamic>>>()
+        .eq('user_id', user.id)
+        .order('created_at', ascending: false);
+    if (!mounted) return;
+    if (workouts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You have no workouts yet. Create one first.')),
+      );
+      return;
+    }
+    await showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return ListView(
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text('Add to workout', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
+            ...workouts.map((w) => ListTile(
+                  title: Text(w['name'] as String? ?? 'Unnamed'),
+                  subtitle: Text(
+                    w['description'] as String? ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    // determine next order value by selecting max order for this workout
+                    final res = await _client
+                        .from('workout_exercises')
+                        .select<List<Map<String, dynamic>>>(
+                            'order')
+                        .eq('workout_id', w['id'] as String)
+                        .order('order', ascending: false)
+                        .limit(1);
+                    int nextOrder = 1;
+                    if (res.isNotEmpty && res[0]['order'] != null) {
+                      nextOrder = (res[0]['order'] as int) + 1;
+                    }
+                    try {
+                      await _client.from('workout_exercises').insert({
+                        'workout_id': w['id'],
+                        'exercise_id': widget.exerciseId,
+                        'order': nextOrder,
+                      });
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Added to ${w['name']}')),
+                      );
+                    } catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Could not add exercise')),
+                      );
+                    }
+                  },
+                )),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -95,14 +174,26 @@ class _ExerciseDetailPageState extends State<ExerciseDetailPage> {
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 16),
-                      if (_exercise!['sets'] != null || _exercise!['reps'] != null) ...[
-                        Text('Recommended:', style: Theme.of(context).textTheme.titleMedium),
+                      // Show recommended sets and reps if available. The
+                      // exercises table uses the columns `recommended_sets` and
+                      // `recommended_reps` to store this information. If not
+                      // present, nothing is displayed.
+                      if (_exercise!['recommended_sets'] != null ||
+                          _exercise!['recommended_reps'] != null) ...[
+                        Text('Recommended:',
+                            style: Theme.of(context).textTheme.titleMedium),
                         const SizedBox(height: 4),
                         Text(
-                          '${_exercise!['sets'] != null ? '${_exercise!['sets']} sets' : ''}'
-                          '${_exercise!['reps'] != null ? ' ${_exercise!['reps']} reps' : ''}',
+                          '${_exercise!['recommended_sets'] != null ? '${_exercise!['recommended_sets']} sets' : ''}'
+                          '${_exercise!['recommended_reps'] != null ? ' ${_exercise!['recommended_reps']} reps' : ''}',
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
+                        const SizedBox(height: 8),
+                        // Show a generic rest recommendation. In the future this
+                        // could come from a dedicated column such as
+                        // `recommended_rest_seconds`.
+                        Text('Rest: 60 seconds',
+                            style: Theme.of(context).textTheme.bodyMedium),
                         const SizedBox(height: 16),
                       ],
                       Text('Related videos:', style: Theme.of(context).textTheme.titleMedium),
@@ -132,6 +223,21 @@ class _ExerciseDetailPageState extends State<ExerciseDetailPage> {
                       ),
                       if (_videos.isEmpty)
                         const Text('No videos for this exercise'),
+
+                      const SizedBox(height: 24),
+                      // Button to add this exercise to a workout. Displayed
+                      // at the end of the details so users can easily
+                      // incorporate the exercise into their personal
+                      // routine. This uses a bottom sheet to select a
+                      // workout and inserts the exercise via Supabase.
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _addToWorkout,
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add to my workouts'),
+                        ),
+                      ),
                     ],
                   ),
                 ),

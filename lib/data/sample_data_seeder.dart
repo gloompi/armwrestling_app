@@ -38,29 +38,31 @@ class SampleDataSeeder {
       final catStrengthId = categoriesRes[1]['id'] as String;
       final catEnduranceId = categoriesRes[2]['id'] as String;
 
-      // 2. Insert exercises
+      // 2. Insert exercises. Use `recommended_sets` and `recommended_reps`
+      // to align with the table definition. The `preview_url` is left null
+      // for simplicity.
       final exercisesRes = await client
           .from('exercises')
           .insert([
             {
               'name': 'Bicep Curl',
               'description': 'Basic exercise to build biceps.',
-              'sets': 3,
-              'reps': 10,
+              'recommended_sets': 3,
+              'recommended_reps': 10,
               'preview_url': null,
             },
             {
               'name': 'Hammer Curl',
               'description': 'Works brachioradialis and forearms.',
-              'sets': 3,
-              'reps': 8,
+              'recommended_sets': 3,
+              'recommended_reps': 8,
               'preview_url': null,
             },
             {
               'name': 'Wrist Curl',
               'description': 'Strengthens wrists.',
-              'sets': 4,
-              'reps': 12,
+              'recommended_sets': 4,
+              'recommended_reps': 12,
               'preview_url': null,
             },
           ])

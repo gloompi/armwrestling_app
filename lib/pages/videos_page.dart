@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Displays a list of videos with optional category filtering and infinite
 /// scrolling. Each video can be tapped to view details, comments and
@@ -274,6 +275,26 @@ class _VideoDetailDialogState extends State<VideoDetailDialog> {
                         style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 8),
                     Text(_video?['description'] as String? ?? ''),
+                    const SizedBox(height: 16),
+                    // Button to play the video using the url_launcher package.
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final url = _video?['video_url'] as String?;
+                          if (url != null) {
+                            final uri = Uri.parse(url);
+                            if (await canLaunchUrl(uri)) {
+                              // Use external application mode to open YouTube links in the
+                              // platform's default browser or app.
+                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.play_arrow),
+                        label: const Text('Play video'),
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     Text('Related exercises:',
                         style: Theme.of(context).textTheme.titleMedium),

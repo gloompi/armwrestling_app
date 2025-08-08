@@ -159,77 +159,15 @@ class _MainNavigationState extends State<MainNavigation> {
     'More',
   ];
 
-  /// Builds a navigation drawer with links to each section of the app. The
-  /// drawer is available from any page via the hamburger icon in the app bar.
-  Widget _buildDrawer(BuildContext context) {
-    // Fetch the current user to display email or a placeholder. If there is
-    // no logged in user (shouldn't happen because RootPage gates access),
-    // show "Guest". Supabase may return null if the session expired.
-    final user = Supabase.instance.client.auth.currentUser;
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          UserAccountsDrawerHeader(
-            accountName: const Text(''),
-            accountEmail: Text(user?.email ?? 'Guest'),
-            currentAccountPicture: const CircleAvatar(
-              child: Icon(Icons.person),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.fitness_center),
-            title: const Text('Exercises'),
-            onTap: () {
-              setState(() => _index = 0);
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.view_list),
-            title: const Text('Workouts'),
-            onTap: () {
-              setState(() => _index = 1);
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.home),
-            title: const Text('Home'),
-            onTap: () {
-              setState(() => _index = 2);
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.video_library),
-            title: const Text('Videos'),
-            onTap: () {
-              setState(() => _index = 3);
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.more_horiz),
-            title: const Text('More'),
-            onTap: () {
-              setState(() => _index = 4);
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       // The app bar shows the current page title and automatically displays
       // a hamburger icon when a drawer is provided. Tapping the icon opens
-      // the navigation drawer defined below.
+      // the navigation drawer. We removed the drawer so the app bar only shows
+      // the page title. The bottom navigation bar provides navigation.
       appBar: AppBar(title: Text(_titles[_index])),
-      drawer: _buildDrawer(context),
       body: _pages[_index],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _index,
