@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 /// Page that guides the user through a workout session. It displays each
 /// exercise in the workout one by one with a countdown timer for both the
@@ -28,12 +29,17 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
   @override
   void initState() {
     super.initState();
+    // Keep the device screen awake during a workout session. This will be
+    // released in dispose() below.
+    WakelockPlus.enable();
     _loadExercises();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    // Release wakelock when leaving the page or when the session ends.
+    WakelockPlus.disable();
     super.dispose();
   }
 

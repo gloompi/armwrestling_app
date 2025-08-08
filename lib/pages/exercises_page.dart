@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shimmer/shimmer.dart';
+import 'exercise_detail_page.dart';
 
 /// Displays a paginated, filterable list of exercises. Users can select a
 /// category filter via horizontally scrollable chips and scroll through
@@ -66,6 +68,15 @@ class _ExercisesPageState extends State<ExercisesPage> {
     });
   }
 
+  Future<void> _refresh() async {
+    setState(() {
+      _exercises.clear();
+      _page = 0;
+      _hasMore = true;
+    });
+    await _loadMore();
+  }
+
   Future<List<String>> _exerciseIdsForCategory(String categoryId) async {
     final rows = await _client
         .from('exercise_categories')
@@ -121,48 +132,91 @@ class _ExercisesPageState extends State<ExercisesPage> {
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            controller: _scrollController,
-            itemCount: _exercises.length + (_hasMore ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index >= _exercises.length) {
-                return const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              final exercise = _exercises[index];
-                   return Card(
-                     margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                     child: ListTile(
-                       contentPadding: const EdgeInsets.all(8),
-                       leading: exercise['preview_url'] != null
-                           ? ClipRRect(
-                               borderRadius: BorderRadius.circular(8),
-                               child: Image.network(
-                                 exercise['preview_url'],
-                                 width: 64,
-                                 height: 64,
-                                 fit: BoxFit.cover,
-                                 errorBuilder: (context, error, stackTrace) => const Icon(Icons.fitness_center, size: 40),
-                               ),
-                             )
-                           : const Icon(Icons.fitness_center, size: 40),
-                       title: Text(
-                         exercise['name'] as String? ?? 'Unnamed',
-                         style: Theme.of(context).textTheme.titleMedium,
-                       ),
-                       subtitle: Text(
-                         exercise['description'] as String? ?? '',
-                         maxLines: 2,
-                         overflow: TextOverflow.ellipsis,
-                       ),
-                       onTap: () {
-                         // TODO: navigate to detail page
-                       },
-                     ),
-                   );
-            },
+          child: RefreshIndicator(
+            onRefresh: _refresh,
+            child: _exercises.isEmpty && _loading
+                ? ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: 6,
+                    itemBuilder: (context, index) {
+                      return Shimmer.fromColors(
+                        baseColor:
+                            Theme.of(context).colorScheme.surfaceVariant,
+                        highlightColor: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.1),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 4, horizontal: 8),
+                          child: Container(
+                            height: 72,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceVariant,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: _exercises.length + (_hasMore ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index >= _exercises.length) {
+                        return const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      final exercise = _exercises[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                            vertical: 4, horizontal: 8),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(8),
+                          leading: exercise['preview_url'] != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    exercise['preview_url'],
+                                    width: 64,
+                                    height: 64,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) =>
+                                        const Icon(Icons.fitness_center,
+                                            size: 40),
+                                  ),
+                                )
+                              : const Icon(Icons.fitness_center, size: 40),
+                          title: Text(
+                            exercise['name'] as String? ?? 'Unnamed',
+                            style:
+                                Theme.of(context).textTheme.titleMedium,
+                          ),
+                          subtitle: Text(
+                            exercise['description'] as String? ?? '',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          onTap: () {
+                            // Navigate to exercise details page
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => ExerciseDetailPage(
+                                  exerciseId: exercise['id'] as String,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
           ),
         ),
       ],

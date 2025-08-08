@@ -17,6 +17,33 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   bool _isSignIn = true;
 
+  Future<void> _forgotPassword() async {
+    final email = _emailController.text;
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your email to reset the password')),
+      );
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      await Supabase.instance.client.auth.resetPasswordForEmail(email);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password reset email sent. Check your inbox.')),
+        );
+      }
+    } on AuthException catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.message)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
       Future<void> _authenticate() async {
         final isValid = _formKey.currentState?.validate() ?? false;
         if (!isValid) return;
@@ -119,6 +146,11 @@ class _LoginPageState extends State<LoginPage> {
                           onPressed: _authenticate,
                           child: Text(_isSignIn ? 'Sign in' : 'Sign up'),
                         ),
+                  if (_isSignIn)
+                    TextButton(
+                      onPressed: _forgotPassword,
+                      child: const Text('Forgot password?'),
+                    ),
                   TextButton(
                     onPressed: () => setState(() => _isSignIn = !_isSignIn),
                     child: Text(_isSignIn
