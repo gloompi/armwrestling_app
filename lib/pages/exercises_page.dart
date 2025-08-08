@@ -132,16 +132,36 @@ class _ExercisesPageState extends State<ExercisesPage> {
                 );
               }
               final exercise = _exercises[index];
-              return ListTile(
-                leading: exercise['preview_url'] != null
-                    ? Image.network(exercise['preview_url'], width: 56, height: 56, fit: BoxFit.cover)
-                    : const Icon(Icons.fitness_center),
-                title: Text(exercise['name'] as String? ?? 'Unnamed'),
-                subtitle: Text(exercise['description'] as String? ?? ''),
-                onTap: () {
-                  // TODO: navigate to detail page
-                },
-              );
+                   return Card(
+                     margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                     child: ListTile(
+                       contentPadding: const EdgeInsets.all(8),
+                       leading: exercise['preview_url'] != null
+                           ? ClipRRect(
+                               borderRadius: BorderRadius.circular(8),
+                               child: Image.network(
+                                 exercise['preview_url'],
+                                 width: 64,
+                                 height: 64,
+                                 fit: BoxFit.cover,
+                                 errorBuilder: (context, error, stackTrace) => const Icon(Icons.fitness_center, size: 40),
+                               ),
+                             )
+                           : const Icon(Icons.fitness_center, size: 40),
+                       title: Text(
+                         exercise['name'] as String? ?? 'Unnamed',
+                         style: Theme.of(context).textTheme.titleMedium,
+                       ),
+                       subtitle: Text(
+                         exercise['description'] as String? ?? '',
+                         maxLines: 2,
+                         overflow: TextOverflow.ellipsis,
+                       ),
+                       onTap: () {
+                         // TODO: navigate to detail page
+                       },
+                     ),
+                   );
             },
           ),
         ),

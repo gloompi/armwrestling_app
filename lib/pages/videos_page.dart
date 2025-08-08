@@ -133,17 +133,28 @@ class _VideosPageState extends State<VideosPage> {
                 );
               }
               final video = _videos[index];
-              return ListTile(
-                leading: const Icon(Icons.play_circle_outline),
-                title: Text(video['title'] as String? ?? 'Untitled'),
-                subtitle: Text(video['description'] as String? ?? ''),
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => VideoDetailDialog(videoId: video['id'] as String),
-                  );
-                },
-              );
+                   return Card(
+                     margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                     child: ListTile(
+                       contentPadding: const EdgeInsets.all(8),
+                       leading: const Icon(Icons.play_circle_outline, size: 40),
+                       title: Text(
+                         video['title'] as String? ?? 'Untitled',
+                         style: Theme.of(context).textTheme.titleMedium,
+                       ),
+                       subtitle: Text(
+                         video['description'] as String? ?? '',
+                         maxLines: 2,
+                         overflow: TextOverflow.ellipsis,
+                       ),
+                       onTap: () {
+                         showDialog(
+                           context: context,
+                           builder: (context) => VideoDetailDialog(videoId: video['id'] as String),
+                         );
+                       },
+                     ),
+                   );
             },
           ),
         ),
