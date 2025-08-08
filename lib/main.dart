@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:async';
 import 'pages/home_page.dart';
 import 'pages/exercises_page.dart';
 import 'pages/workouts_page.dart';
@@ -58,6 +59,27 @@ class RootPage extends StatefulWidget {
 }
 
 class _RootPageState extends State<RootPage> {
+  StreamSubscription<AuthStateChangeEvent>? _authSub;
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen to authentication state changes so we rebuild when a user signs in
+    // or out. Without this, the user would need to manually refresh the app
+    // after logging in【481103789607762†L470-L476】.
+    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((event) {
+      // Trigger a rebuild when the auth state changes
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     final session = Supabase.instance.client.auth.currentSession;

@@ -17,33 +17,48 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   bool _isSignIn = true;
 
-  Future<void> _authenticate() async {
-    final isValid = _formKey.currentState?.validate() ?? false;
-    if (!isValid) return;
-    setState(() => _isLoading = true);
-    final auth = Supabase.instance.client.auth;
-    try {
-      if (_isSignIn) {
-        await auth.signInWithPassword(
-          email: _emailController.text,
-          password: _passwordController.text,
-        );
-      } else {
-        await auth.signUp(
-          email: _emailController.text,
-          password: _passwordController.text,
-        );
+      Future<void> _authenticate() async {
+        final isValid = _formKey.currentState?.validate() ?? false;
+        if (!isValid) return;
+        setState(() => _isLoading = true);
+        final auth = Supabase.instance.client.auth;
+        try {
+          if (_isSignIn) {
+            // Attempt to sign in
+            await auth.signInWithPassword(
+              email: _emailController.text,
+              password: _passwordController.text,
+            );
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Signed in successfully')), 
+              );
+            }
+          } else {
+            // Attempt to sign up. In Supabase v1 this does not automatically
+            // sign the user in. Show a success message and switch to sign in
+            await auth.signUp(
+              email: _emailController.text,
+              password: _passwordController.text,
+            );
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Account created! Check your email to verify your address.')), 
+              );
+              // Switch back to sign in mode so the user can log in
+              setState(() => _isSignIn = true);
+            }
+          }
+        } on AuthException catch (error) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(error.message)),
+            );
+          }
+        } finally {
+          if (mounted) setState(() => _isLoading = false);
+        }
       }
-    } on AuthException catch (error) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message)),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
