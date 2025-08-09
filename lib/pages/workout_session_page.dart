@@ -28,11 +28,38 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
   bool _running = false;
   bool _paused = false;
 
-  // Duration of each exercise segment and rest segment in seconds. In a
-  // future version these could come from the workout or exercise
-  // definitions. For now they are fixed.
+  // Duration of each exercise segment in seconds. Each exercise is timed
+  // for this duration regardless of its recommended sets/reps. Rest
+  // durations are dynamic based on the current workout exercise record or
+  // the exercise's recommended rest value. If neither is provided a
+  // default rest duration is used. See [_currentRestDuration].
   final int _exerciseDuration = 30;
-  final int _restDuration = 15;
+  // A fallback rest duration used when no rest information is available
+  // for the current exercise. This is only used if both the workout
+  // exercise and exercise definitions do not specify a rest period.
+  final int _defaultRestDuration = 30;
+
+  /// Returns the appropriate rest duration for the current exercise. It
+  /// first checks the `rest_seconds` field on the current workout
+  /// exercise record. If that is null, it falls back to the exercise's
+  /// `recommended_rest_seconds` field. If that is also null, it returns
+  /// [_defaultRestDuration].
+  int _currentRestDuration() {
+    final row = _exercises.isNotEmpty ? _exercises[_currentIndex] : null;
+    if (row != null) {
+      final restFromWorkout = row['rest_seconds'] as int?;
+      if (restFromWorkout != null && restFromWorkout > 0) {
+        return restFromWorkout;
+      }
+      final exercisesMap = row['exercises'] as Map<String, dynamic>?;
+      final restFromExercise =
+          exercisesMap != null ? exercisesMap['recommended_rest_seconds'] as int? : null;
+      if (restFromExercise != null && restFromExercise > 0) {
+        return restFromExercise;
+      }
+    }
+    return _defaultRestDuration;
+  }
 
   @override
   void initState() {
@@ -57,8 +84,8 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
     final rows = await _client
         .from('workout_exercises')
         .select<List<Map<String, dynamic>>>(
-            // join exercises to include name, description and preview_url
-            '*, exercises!inner(name, description, preview_url)')
+            // join exercises to include name, description, preview_url and recommended rest/sets/reps
+            '*, exercises!inner(name, description, preview_url, recommended_sets, recommended_reps, recommended_rest_seconds)')
         .eq('workout_id', widget.workoutId)
         .order('order', ascending: true);
     setState(() {
@@ -87,7 +114,8 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
         } else {
           setState(() {
             _isRest = true;
-            _secondsLeft = 15; // rest period length
+            // Use dynamic rest duration based on the current exercise
+            _secondsLeft = _currentRestDuration();
           });
           _startOrResume();
         }
@@ -171,8 +199,10 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
     final currentExercisesMap = current['exercises'] as Map<String, dynamic>;
     final currentName = currentExercisesMap['name'] as String? ?? 'Exercise';
     final currentPreviewUrl = currentExercisesMap['preview_url'] as String?;
-    final currentSets = currentExercisesMap['recommended_sets'] as int?;
-    final currentReps = currentExercisesMap['recommended_reps'] as int?;
+    // Prefer sets/reps defined on the workout exercise row if available,
+    // otherwise fall back to the exercise's recommended values.
+    final currentSets = current['sets'] as int? ?? (currentExercisesMap['recommended_sets'] as int?);
+    final currentReps = current['reps'] as int? ?? (currentExercisesMap['recommended_reps'] as int?);
     final nextName = _currentIndex + 1 < _exercises.length
         ? (((_exercises[_currentIndex + 1]['exercises'] as Map<String, dynamic>)['name']) as String? ?? '')
         : null;
@@ -217,7 +247,8 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
                       child: Text(
                         [
                           if (currentSets != null) '${currentSets} sets',
-                          if (currentReps != null) '${currentReps} reps'
+                          if (currentReps != null) '${currentReps} reps',
+                          '${_currentRestDuration()}s rest'
                         ].join(' · '),
                         style: Theme.of(context).textTheme.bodyMedium,
                         textAlign: TextAlign.center,
@@ -236,9 +267,16 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage> {
                             width: 200,
                             height: 200,
                             child: CircularProgressIndicator(
+                              // The progress indicator shows how much time has elapsed
+                              // in the current segment. When resting, use the rest
+                              // duration for the denominator; otherwise, use the
+                              // fixed exercise duration. If the total duration is zero,
+                              // avoid division by zero by defaulting progress to 0.
                               value: 1 -
-                                  _secondsLeft /
-                                      (_isRest ? _restDuration : _exerciseDuration),
+                                  (_secondsLeft /
+                                      (_isRest
+                                          ? _currentRestDuration().toDouble()
+                                          : _exerciseDuration.toDouble())),
                               strokeWidth: 8,
                               backgroundColor: Theme.of(context)
                                   .colorScheme

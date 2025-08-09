@@ -59,7 +59,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       final rows = await _client
           .from('workout_exercises')
           .select<List<Map<String, dynamic>>>(
-              'id, order, exercises!inner(id, name, description, recommended_sets, recommended_reps, preview_url)')
+              'id, order, sets, reps, rest_seconds, exercises!inner(id, name, description, recommended_sets, recommended_reps, recommended_rest_seconds, preview_url)')
           .eq('workout_id', _workoutId)
           .order('order', ascending: true);
       setState(() {
@@ -243,6 +243,97 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
           );
   }
 
+  /// Opens a bottom sheet allowing the user to edit the sets, reps and
+  /// rest time for a particular exercise in the workout. The sheet
+  /// prepopulates the fields with existing values (or recommended ones) and
+  /// updates the row upon saving.
+  Future<void> _editWorkoutExercise(Map<String, dynamic> row) async {
+    final ex = row['exercises'] as Map<String, dynamic>;
+    final initialSets = row['sets'] ?? ex['recommended_sets'];
+    final initialReps = row['reps'] ?? ex['recommended_reps'];
+    final initialRest = row['rest_seconds'] ?? ex['recommended_rest_seconds'];
+    final setsController = TextEditingController(text: initialSets?.toString() ?? '');
+    final repsController = TextEditingController(text: initialReps?.toString() ?? '');
+    final restController = TextEditingController(text: initialRest?.toString() ?? '');
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            left: 16,
+            right: 16,
+            top: 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Edit ${ex['name']}', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 12),
+              TextField(
+                controller: setsController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Sets',
+                ),
+              ),
+              TextField(
+                controller: repsController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Reps',
+                ),
+              ),
+              TextField(
+                controller: restController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Rest (seconds)',
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final sets = int.tryParse(setsController.text.trim());
+                      final reps = int.tryParse(repsController.text.trim());
+                      final rest = int.tryParse(restController.text.trim());
+                      if (sets == null || reps == null || rest == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please enter valid numbers.')),
+                        );
+                        return;
+                      }
+                      Navigator.of(context).pop();
+                      await _client
+                          .from('workout_exercises')
+                          .update({
+                        'sets': sets,
+                        'reps': reps,
+                        'rest_seconds': rest,
+                      }).eq('id', row['id']);
+                      await _loadWorkout();
+                    },
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   /// Creates a new private copy of a public workout and its exercises.
   Future<void> _copyPublicWorkout() async {
     final user = _client.auth.currentUser;
@@ -372,8 +463,18 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                                 final index = entry.key;
                                 final row = entry.value;
                                 final ex = row['exercises'] as Map<String, dynamic>;
-                                final sets = ex['recommended_sets'];
-                                final reps = ex['recommended_reps'];
+                                // Use custom values if set, otherwise fall back to recommended
+                                final customSets = row['sets'];
+                                final customReps = row['reps'];
+                                final customRest = row['rest_seconds'];
+                                final sets = customSets ?? ex['recommended_sets'];
+                                final reps = customReps ?? ex['recommended_reps'];
+                                final rest = customRest ?? ex['recommended_rest_seconds'];
+                                final info = [
+                                  if (sets != null) '${sets} sets',
+                                  if (reps != null) '${reps} reps',
+                                  if (rest != null) '${rest}s rest'
+                                ].join('  ');
                                 return Card(
                                   margin:
                                       const EdgeInsets.symmetric(vertical: 4),
@@ -389,14 +490,21 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                                       ),
                                     ),
                                     title: Text(ex['name'] as String? ?? ''),
-                                    subtitle: Text([
-                                      if (sets != null) '${sets} sets',
-                                      if (reps != null) '${reps} reps'
-                                    ].join('  ')),
+                                    subtitle: Text(info),
                                     trailing: widget.editable
-                                        ? IconButton(
-                                            icon: const Icon(Icons.delete),
-                                            onPressed: () => _removeExercise(row['id'] as String),
+                                        ? Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(Icons.edit),
+                                                tooltip: 'Edit sets/reps/rest',
+                                                onPressed: () => _editWorkoutExercise(row),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.delete),
+                                                onPressed: () => _removeExercise(row['id'] as String),
+                                              ),
+                                            ],
                                           )
                                         : null,
                                   ),

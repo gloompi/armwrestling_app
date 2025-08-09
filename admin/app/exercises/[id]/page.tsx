@@ -12,6 +12,7 @@ interface Exercise {
   preview_url: string | null;
   recommended_sets: number | null;
   recommended_reps: number | null;
+  recommended_rest_seconds: number | null;
 }
 
 export default function EditExercisePage() {
@@ -26,6 +27,7 @@ export default function EditExercisePage() {
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [sets, setSets] = useState("");
   const [reps, setReps] = useState("");
+  const [rest, setRest] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -35,7 +37,9 @@ export default function EditExercisePage() {
       if (!id) return;
       const { data, error } = await supabase
         .from("exercises")
-        .select("id, name, description, preview_url, recommended_sets, recommended_reps")
+        .select(
+          "id, name, description, preview_url, recommended_sets, recommended_reps, recommended_rest_seconds",
+        )
         .eq("id", id)
         .single();
       if (!error && data) {
@@ -45,6 +49,7 @@ export default function EditExercisePage() {
         setPreviewUrl(data.preview_url ?? "");
         setSets(data.recommended_sets?.toString() ?? "");
         setReps(data.recommended_reps?.toString() ?? "");
+        setRest(data.recommended_rest_seconds?.toString() ?? "");
       }
     }
     fetchExercise();
@@ -71,6 +76,7 @@ export default function EditExercisePage() {
           preview_url: finalPreviewUrl,
           recommended_sets: sets ? parseInt(sets, 10) : null,
           recommended_reps: reps ? parseInt(reps, 10) : null,
+          recommended_rest_seconds: rest ? parseInt(rest, 10) : null,
         })
         .eq("id", exercise.id);
       if (updateError) {
@@ -144,7 +150,7 @@ export default function EditExercisePage() {
             />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium">Recommended Sets</label>
             <input
@@ -161,6 +167,16 @@ export default function EditExercisePage() {
               type="number"
               value={reps}
               onChange={(e) => setReps(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              min="0"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Recommended Rest (seconds)</label>
+            <input
+              type="number"
+              value={rest}
+              onChange={(e) => setRest(e.target.value)}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               min="0"
             />

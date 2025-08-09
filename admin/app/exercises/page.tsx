@@ -11,6 +11,7 @@ interface Exercise {
   preview_url: string | null;
   recommended_sets: number | null;
   recommended_reps: number | null;
+  recommended_rest_seconds: number | null;
 }
 
 export default function ExercisesPage() {
@@ -22,7 +23,9 @@ export default function ExercisesPage() {
     async function fetchExercises() {
       const { data, error } = await supabase
         .from("exercises")
-        .select("id, name, description, preview_url, recommended_sets, recommended_reps")
+        .select(
+          "id, name, description, preview_url, recommended_sets, recommended_reps, recommended_rest_seconds",
+        )
         .order("name", { ascending: true });
       if (!error && data) {
         setExercises(data);
@@ -71,6 +74,9 @@ export default function ExercisesPage() {
                 Reps
               </th>
               <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Rest (s)
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Preview
               </th>
               <th className="px-3 py-2"></th>
@@ -87,6 +93,9 @@ export default function ExercisesPage() {
                 </td>
                 <td className="px-3 py-2 whitespace-nowrap">
                   {ex.recommended_reps ?? "-"}
+                </td>
+                <td className="px-3 py-2 whitespace-nowrap">
+                  {ex.recommended_rest_seconds ?? "-"}
                 </td>
                 <td className="px-3 py-2 whitespace-nowrap">
                   {ex.preview_url ? (

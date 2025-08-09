@@ -8,6 +8,7 @@ import 'pages/workouts_page.dart';
 import 'pages/videos_page.dart';
 import 'pages/more_page.dart';
 import 'pages/login_page.dart';
+import 'pages/exercise_request_page.dart';
 
 // Theme support
 import 'theme/theme_controller.dart';
@@ -162,12 +163,36 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    // Build a list of actions for the AppBar based on the currently
+    // selected page. For example, on the Exercises page we want an
+    // action to open the request form so users can suggest new
+    // exercises. On the Workouts page the FloatingActionButton
+    // handles creation so no action is needed here.
+    final List<Widget> actions;
+    switch (_index) {
+      case 0: // Exercises
+        actions = [
+          IconButton(
+            icon: const Icon(Icons.add_comment_outlined),
+            tooltip: 'Request exercise',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const ExerciseRequestPage(),
+                ),
+              );
+            },
+          ),
+        ];
+        break;
+      default:
+        actions = const [];
+    }
     return Scaffold(
-      // The app bar shows the current page title and automatically displays
-      // a hamburger icon when a drawer is provided. Tapping the icon opens
-      // the navigation drawer. We removed the drawer so the app bar only shows
-      // the page title. The bottom navigation bar provides navigation.
-      appBar: AppBar(title: Text(_titles[_index])),
+      // The app bar shows the current page title and includes optional
+      // actions such as the "request exercise" button. The bottom
+      // navigation bar provides navigation between the main sections.
+      appBar: AppBar(title: Text(_titles[_index]), actions: actions),
       body: _pages[_index],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _index,
@@ -176,27 +201,27 @@ class _MainNavigationState extends State<MainNavigation> {
         selectedFontSize: 12,
         unselectedFontSize: 11,
         showUnselectedLabels: true,
-        items: [
-          const BottomNavigationBarItem(
+        items: const [
+          BottomNavigationBarItem(
             icon: Icon(Icons.fitness_center),
             label: 'Exercises',
           ),
-          const BottomNavigationBarItem(
+          BottomNavigationBarItem(
             icon: Icon(Icons.view_list),
             label: 'Workouts',
           ),
           BottomNavigationBarItem(
             // Make the home icon larger to stand out as the central tab. Use
             // `activeIcon` for an even larger size when selected.
-            icon: const Icon(Icons.home, size: 32),
-            activeIcon: const Icon(Icons.home, size: 40),
+            icon: Icon(Icons.home, size: 32),
+            activeIcon: Icon(Icons.home, size: 40),
             label: 'Home',
           ),
-          const BottomNavigationBarItem(
+          BottomNavigationBarItem(
             icon: Icon(Icons.video_library),
             label: 'Videos',
           ),
-          const BottomNavigationBarItem(
+          BottomNavigationBarItem(
             icon: Icon(Icons.more_horiz),
             label: 'More',
           ),

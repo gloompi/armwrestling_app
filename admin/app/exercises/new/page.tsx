@@ -14,6 +14,7 @@ export default function NewExercisePage() {
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [sets, setSets] = useState("");
   const [reps, setReps] = useState("");
+  const [rest, setRest] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,6 +24,7 @@ export default function NewExercisePage() {
     setError(null);
     const recommended_sets = sets ? parseInt(sets, 10) : null;
     const recommended_reps = reps ? parseInt(reps, 10) : null;
+    const recommended_rest_seconds = rest ? parseInt(rest, 10) : null;
     try {
       // If a file was selected, upload it to Supabase Storage and get a public URL
       let finalPreviewUrl: string | null = null;
@@ -40,6 +42,7 @@ export default function NewExercisePage() {
             preview_url: finalPreviewUrl,
             recommended_sets,
             recommended_reps,
+            recommended_rest_seconds,
           },
         ]);
       if (insertError) {
@@ -97,7 +100,7 @@ export default function NewExercisePage() {
             />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium">Recommended Sets</label>
             <input
@@ -114,6 +117,16 @@ export default function NewExercisePage() {
               type="number"
               value={reps}
               onChange={(e) => setReps(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              min="0"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Recommended Rest (seconds)</label>
+            <input
+              type="number"
+              value={rest}
+              onChange={(e) => setRest(e.target.value)}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               min="0"
             />

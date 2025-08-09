@@ -77,10 +77,17 @@ class _ExerciseDetailPageState extends State<ExerciseDetailPage> {
                       nextOrder = (res[0]['order'] as int) + 1;
                     }
                     try {
+                      // Pull recommended sets/reps/rest from the exercise
+                      final sets = _exercise?['recommended_sets'] as int?;
+                      final reps = _exercise?['recommended_reps'] as int?;
+                      final rest = _exercise?['recommended_rest_seconds'] as int?;
                       await _client.from('workout_exercises').insert({
                         'workout_id': w['id'],
                         'exercise_id': widget.exerciseId,
                         'order': nextOrder,
+                        if (sets != null) 'sets': sets,
+                        if (reps != null) 'reps': reps,
+                        if (rest != null) 'rest_seconds': rest,
                       });
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -144,6 +151,7 @@ class _ExerciseDetailPageState extends State<ExerciseDetailPage> {
     final name = _exercise!['name'] as String? ?? 'Exercise';
     final sets = _exercise!['recommended_sets'] as int?;
     final reps = _exercise!['recommended_reps'] as int?;
+    final rest = _exercise!['recommended_rest_seconds'] as int?;
     return Stack(
       children: [
         // Background image
@@ -205,8 +213,13 @@ class _ExerciseDetailPageState extends State<ExerciseDetailPage> {
                         '$reps reps',
                         style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70),
                       ),
-                    Text(' · 60s rest',
-                        style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70)),
+                    if (rest != null) ...[
+                      Text(' · ', style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70)),
+                      Text(
+                        '${rest}s rest',
+                        style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70),
+                      ),
+                    ],
                   ],
                 ),
               ],
